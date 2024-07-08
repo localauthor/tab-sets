@@ -1,0 +1,27 @@
+#+title: tab-sets.el - Save and restore tab-bar tabs in Emacs
+#+author: Grant Rosson
+#+language: en
+
+This package allows you to save the configuration of =tab-bar-mode= tabs
+open in the current frame and restore that set of tabs later.
+
+Saved tab sets persist between sessions, saved in =tab-sets-data-file=. (Set
+this variable to a path before trying to save.)
+
+To use with [[https://github.com/oantolin/embark][embark]], add =(tab-sets-setup-embark)= to your init file.
+
+* Installation
+
+This package is not in a package archive, so it must be istalled directly.
+
+Sample config:
+
+#+begin_src emacs-lisp
+(use-package tab-sets
+  :ensure nil
+  :vc (:url "https://github.com/localauthor/tab-sets")
+  :custom
+  (tab-sets-data-file "~/.emacs.d/var/tab-sets.eld")
+  :config
+  (tab-sets-setup-embark))
+#+end_src
