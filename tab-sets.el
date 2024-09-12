@@ -35,6 +35,7 @@
 
 (require 'frameset)
 (require 'tab-bar)
+(require 'bookmark)
 
 ;;; Variables
 
@@ -60,6 +61,15 @@ Prefix arg toggles behavior, either way."
 (defcustom tab-sets-confirm-delete t
   "If non-nil, confirm before deleting a tab-set."
   :type 'boolean)
+
+(defcustom tab-sets-bookmark-store t
+  "Store tab-sets as bookmark.
+This allows for opening tab-sets with `bookmark-jump’."
+  :type 'boolean)
+
+(defcustom tab-sets-bookmark-prefix "Tab-Set: "
+  "Prefix for tab-set bookmark names."
+  :type 'string)
 
 ;;; Low-level functions
 
@@ -130,7 +140,8 @@ With optional PROMPT."
            `(metadata
              (category . tab-set))
          (complete-with-action action sets string predicate)))
-     nil (not (eq this-command 'tab-sets-save)))))
+     nil (not (or (eq this-command 'tab-sets-save)
+                  (eq this-command 'tab-sets-bookmark-store))))))
 
 ;;; User-facing functions
 
@@ -144,10 +155,10 @@ With optional PROMPT."
                 (print-level nil)
                 (print-circle nil))
             (insert ";; -*- lisp-data -*-\n\n")
-            (insert (format ";; tab-sets file\n;; Saved on %s\n\n"
-                            (format-time-string "%Y.%m.%d %R")))
-            (pp tab-sets--alist (current-buffer))
-            (write-region (point-min) (point-max) file)))
+  (insert (format ";; tab-sets file\n;; Saved on %s\n\n"
+                  (format-time-string "%Y.%m.%d %R")))
+  (pp tab-sets--alist (current-buffer))
+  (write-region (point-min) (point-max) file)))
       (error "Could not write to filters file `%s'" file))))
 
 ;;;###autoload
@@ -161,6 +172,8 @@ With optional PROMPT."
                                    :name name)))
     (push (list name (tab-sets--frame-files) frame-set) tab-sets--alist)
     (tab-sets-save-to-file)
+    (when tab-sets-bookmark-store
+      (tab-sets-bookmark-store name))
     (message "Tab-set ‘%s’ saved to file." name)))
 
 ;;;###autoload
@@ -195,6 +208,8 @@ With prefix arg, open in current frame."
                                      nil nil 'equal))))
       (setq tab-sets--alist
             (delete tab-set tab-sets--alist))
+      (when tab-sets-bookmark-store
+        (bookmark-delete (concat tab-sets-bookmark-prefix name)))
       (tab-sets-save-to-file))))
 
 ;;;###autoload
@@ -203,10 +218,55 @@ With prefix arg, open in current frame."
   (interactive
    (list (tab-sets--select "Rename: ")))
   (let* ((new-name
-          (tab-sets--check-name (read-string "New name: "))))
+          (tab-sets--check-name (read-string
+                                 (format "Rename \"%s\" to: " name)))))
     (setf (car (assoc name tab-sets--alist)) new-name)
+    (when tab-sets-bookmark-store
+      (bookmark-prop-set name 'tab-set-name new-name)
+      (bookmark-rename name new-name))
     (message "Tab-set ‘%s’ renamed ‘%s’." name new-name)))
 
+;;; Bookmark Integration
+
+(defun tab-sets-bookmark-store (tab-set-name)
+  "Store a `bookmark’ record for TAB-SET-NAME."
+  (bookmark-maybe-load-default-file)
+  (let* ((bookmark-name (concat tab-sets-bookmark-prefix tab-set-name))
+         (props `((tab-set-name . ,tab-set-name)
+                  (handler . tab-sets-bookmark-handler))))
+    (bookmark-store bookmark-name props nil)))
+
+(defun tab-sets-bookmark-handler (bookmark)
+  "Open BOOKMARK’s tab-set."
+  (let ((bookmark-fringe-mark nil))
+    (tab-sets-open (bookmark-prop-get bookmark 'tab-set-name))))
+
+(put 'tab-sets-bookmark-handler 'bookmark-handler-type "Tab-Set")
+
+(defun tab-sets-ensure-bookmarks ()
+  "Ensure tab-sets in `tab-sets-data-file’ saved as bookmarks.
+Delete stale tab-set bookmarks."
+  (interactive)
+  (let ((tab-set-names (tab-sets--all-names)))
+    (dolist (x tab-set-names)
+      (unless
+          (bookmark-get-bookmark (concat tab-sets-bookmark-prefix x) t)
+        (tab-sets-bookmark-store x)))))
+
+(defun tab-sets-prune-stale-bookmarks ()
+  "Delete stale bookmarks, with no corresponding tab-set."
+  (interactive)
+  (let ((tab-set-names (tab-sets--all-names)))
+    (dolist (x (bookmark-all-names))
+      (when (and (bookmark-prop-get x 'tab-set-name)
+                 (not (member (bookmark-prop-get x 'tab-set-name) tab-set-names)))
+        (bookmark-delete x)))))
+
+(defun tab-sets-reconcile-bookmarks ()
+  "Reconcile tab-sets and bookmarks."
+  (interactive)
+  (tab-sets-ensure-bookmarks)
+  (tab-sets-prune-stale-bookmarks))
 
 ;;; Embark Integration
 
@@ -221,7 +281,7 @@ With prefix arg, open in current frame."
 ;;;###autoload
 (defun tab-sets-setup-embark ()
   "Setup Embark integration for `tab-sets’.
-Adds tab-set as an Embark target, and adds `tab-set-map'
+Adds tab-set as an Embark target, and adds `tab-sets-map'
 to `embark-keymap-alist'."
   (with-eval-after-load 'embark
     (add-to-list 'embark-keymap-alist '(tab-set . tab-sets-map))))
