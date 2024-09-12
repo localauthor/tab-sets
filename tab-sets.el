@@ -174,7 +174,8 @@ With prefix arg, open in current frame."
   (let* ((frame-set
           (alist-get name tab-sets--alist nil nil 'equal)))
     (dolist (file (car frame-set))
-      (find-file-noselect file))
+      (when (file-exists-p file)
+        (find-file-noselect file)))
     (when (or (and tab-sets-same-frame
                    (not current-prefix-arg))
               (and current-prefix-arg
