@@ -83,9 +83,10 @@ This allows for opening tab-sets with `bookmark-jump’."
         (let ((tabs-list (when (search-forward "(" nil t)
                            (forward-char -1)
                            (read (current-buffer)))))
-          (if (not (listp tabs-list))
-              (error "No tabs found in `%s'\n" file)
-            (setq tab-sets--alist tabs-list)))))))
+          (unless (and tabs-list
+                       (listp tabs-list))
+            (error "No tabs found in `%s'" file))
+          (setq tab-sets--alist tabs-list))))))
 
 (defun tab-sets--alist ()
   "Return variable `tab-sets--alist’, loading if needed."
@@ -183,7 +184,7 @@ With prefix arg, open in current frame."
   (interactive
    (list (tab-sets--select "Open: ")))
   (unless tab-sets--alist
-    (user-error "No saved tab-sets"))
+    (tab-sets--load-from-file))
   (let* ((frame-set
           (alist-get name tab-sets--alist nil nil 'equal)))
     (dolist (file (car frame-set))
