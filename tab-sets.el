@@ -195,7 +195,8 @@ With prefix arg, open in current frame."
               (and current-prefix-arg
                    (not tab-sets-same-frame)))
       (delete-frame))
-    (frameset-restore (cadr frame-set))))
+    (frameset-restore (cadr frame-set))
+    (select-frame-set-input-focus (car (frame-list)))))
 
 ;;;###autoload
 (defun tab-sets-delete (name)
