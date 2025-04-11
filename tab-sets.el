@@ -130,9 +130,9 @@ This allows for opening tab-sets with `bookmark-jump’."
     (tab-select (1+ current))
     (flatten-list files)))
 
-(defun tab-sets--select (&optional prompt)
+(defun tab-sets--select (&optional prompt initial)
   "Completing read function for selecting a tab-set.
-With optional PROMPT."
+With optional PROMPT and INITIAL value."
   (let ((sets (tab-sets--alist)))
     (completing-read
      (or prompt "Select: ")
@@ -142,7 +142,8 @@ With optional PROMPT."
              (category . tab-set))
          (complete-with-action action sets string predicate)))
      nil (not (or (eq this-command 'tab-sets-save)
-                  (eq this-command 'tab-sets-bookmark-store))))))
+                  (eq this-command 'tab-sets-bookmark-store)))
+     initial)))
 
 ;;; User-facing functions
 
@@ -167,6 +168,10 @@ With optional PROMPT."
   "Save tab-set of current frame as NAME."
   (interactive
    (list (tab-sets--select "Save as: ")))
+   (list (tab-sets--select "Save tab-set as: "
+                           (frame-parameter
+                            (selected-frame)
+                            'tab-set-frame))))
   (let* ((tab-sets-confirm-delete nil)
          (name (tab-sets--check-name name))
          (frame-set (frameset-save (list (window-frame))
@@ -196,7 +201,8 @@ With prefix arg, open in current frame."
                    (not tab-sets-same-frame)))
       (delete-frame))
     (frameset-restore (cadr frame-set))
-    (select-frame-set-input-focus (car (frame-list)))))
+    (select-frame-set-input-focus (car (frame-list)))
+    (set-frame-parameter (selected-frame) 'tab-set-frame name)))
 
 ;;;###autoload
 (defun tab-sets-delete (name)
