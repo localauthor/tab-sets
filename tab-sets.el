@@ -139,11 +139,29 @@ With optional PROMPT and INITIAL value."
      (lambda (string predicate action)
        (if (eq action 'metadata)
            `(metadata
-             (category . tab-set))
+             (category . tab-set)
+             (annotation-function . tab-sets-annotate))
          (complete-with-action action sets string predicate)))
      nil (not (or (eq this-command 'tab-sets-save)
                   (eq this-command 'tab-sets-bookmark-store)))
      initial)))
+
+(defun tab-sets-annotate (cand)
+  "Annotate tab-set CAND with list of file-names."
+  (when-let ((sets tab-sets--alist)
+             (index (seq-position
+                     sets nil
+                     (lambda (set _) (equal (car set) cand)))))
+    (let* ((set (nth index sets))
+           (files (cadr set)))
+      (mapconcat (lambda (x)
+                   (let ((name (file-name-nondirectory x)))
+                     (concat
+                      " | "
+                      (if (< 20 (length name))
+                          (substring name 0 20)
+                        name))))
+                 files))))
 
 ;;; User-facing functions
 
@@ -277,6 +295,8 @@ Delete stale tab-set bookmarks."
 
 ;;; Embark Integration
 
+(defvar embark-general-map)
+
 (defvar tab-sets-map
   (let ((map (make-sparse-keymap)))
     (set-keymap-parent map embark-general-map)
@@ -293,6 +313,38 @@ Adds tab-set as an Embark target, and adds `tab-sets-map'
 to `embark-keymap-alist'."
   (with-eval-after-load 'embark
     (add-to-list 'embark-keymap-alist '(tab-set . tab-sets-map))))
+
+;;; Marginalia Integration
+
+(defvar marginalia-annotator-registry)
+
+(defun tab-sets-marginalia-annotation (cand)
+  "Annotate tab-set CAND."
+  (when-let ((sets tab-sets--alist)
+             (index (seq-position
+                     sets nil
+                     (lambda (set _) (equal (car set) cand)))))
+    (let* ((set (nth index sets))
+           (files (cadr set))
+           (annot (mapconcat (lambda (x)
+                               (let ((name (file-name-nondirectory x)))
+                                 (concat
+                                  " | "
+                                  (if (< 20 (length name))
+                                      (substring name 0 20)
+                                    name))))
+                             files)))
+      (marginalia--fields
+       (annot :format (propertize "%s" 'face 'marginalia-file-name))))))
+
+;;;###autoload
+(defun tab-sets-setup-marginalia ()
+  "Setup Marginalia annotation for `tab-sets’ completion.
+Alternative to the built-in annotation function."
+  (with-eval-after-load 'marginalia
+    (add-to-list 'marginalia-annotator-registry
+                 '(tab-set tab-sets-marginalia-annotation
+                           marginalia-annotate-file builtin none))))
 
 (provide 'tab-sets)
 
