@@ -167,7 +167,6 @@ With optional PROMPT and INITIAL value."
 (defun tab-sets-save (name)
   "Save tab-set of current frame as NAME."
   (interactive
-   (list (tab-sets--select "Save as: ")))
    (list (tab-sets--select "Save tab-set as: "
                            (frame-parameter
                             (selected-frame)
@@ -187,7 +186,7 @@ With optional PROMPT and INITIAL value."
   "Open tab-set NAME in new frame.
 With prefix arg, open in current frame."
   (interactive
-   (list (tab-sets--select "Open: ")))
+   (list (tab-sets--select "Open tab-set: ")))
   (unless tab-sets--alist
     (tab-sets--load-from-file))
   (let* ((frame-set
@@ -208,7 +207,7 @@ With prefix arg, open in current frame."
 (defun tab-sets-delete (name)
   "Delete tab-set NAME."
   (interactive
-   (list (tab-sets--select "Delete: ")))
+   (list (tab-sets--select "Delete tab-set: ")))
   (when (or (not tab-sets-confirm-delete)
             (y-or-n-p (format "Really delete tab-set ‘%s’?" name)))
     (let* ((tab-set (cons name
@@ -224,7 +223,7 @@ With prefix arg, open in current frame."
 (defun tab-sets-rename (name)
   "Rename tab-set NAME."
   (interactive
-   (list (tab-sets--select "Rename: ")))
+   (list (tab-sets--select "Rename tab-set: ")))
   (let* ((new-name
           (tab-sets--check-name (read-string
                                  (format "Rename \"%s\" to: " name)))))
