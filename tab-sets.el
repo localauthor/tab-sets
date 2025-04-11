@@ -157,10 +157,10 @@ With optional PROMPT and INITIAL value."
                 (print-level nil)
                 (print-circle nil))
             (insert ";; -*- lisp-data -*-\n\n")
-  (insert (format ";; tab-sets file\n;; Saved on %s\n\n"
-                  (format-time-string "%Y.%m.%d %R")))
-  (pp tab-sets--alist (current-buffer))
-  (write-region (point-min) (point-max) file)))
+            (insert (format ";; tab-sets file\n;; Saved on %s\n\n"
+                            (format-time-string "%Y.%m.%d %R")))
+            (pp tab-sets--alist (current-buffer))
+            (write-region (point-min) (point-max) file)))
       (error "Could not write to filters file `%s'" file))))
 
 ;;;###autoload
@@ -190,10 +190,11 @@ With prefix arg, open in current frame."
   (unless tab-sets--alist
     (tab-sets--load-from-file))
   (let* ((frame-set
-          (alist-get name tab-sets--alist nil nil 'equal)))
+          (assoc-default name tab-sets--alist)))
     (dolist (file (car frame-set))
-      (when (file-exists-p file)
-        (find-file-noselect file)))
+      (if (file-exists-p file)
+          (find-file-noselect file)
+        (find-file-noselect "")))
     (when (or (and tab-sets-same-frame
                    (not current-prefix-arg))
               (and current-prefix-arg
@@ -211,8 +212,7 @@ With prefix arg, open in current frame."
   (when (or (not tab-sets-confirm-delete)
             (y-or-n-p (format "Really delete tab-set ‘%s’?" name)))
     (let* ((tab-set (cons name
-                          (alist-get name tab-sets--alist
-                                     nil nil 'equal))))
+                          (assoc-default name tab-sets--alist))))
       (setq tab-sets--alist
             (delete tab-set tab-sets--alist))
       (when tab-sets-bookmark-store
@@ -279,6 +279,7 @@ Delete stale tab-set bookmarks."
 
 (defvar tab-sets-map
   (let ((map (make-sparse-keymap)))
+    (set-keymap-parent map embark-general-map)
     (define-key map (kbd "d") #'tab-sets-delete)
     (define-key map (kbd "r") #'tab-sets-rename)
     (define-key map (kbd "o") #'tab-sets-open)
