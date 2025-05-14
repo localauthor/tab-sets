@@ -148,20 +148,25 @@ With optional PROMPT and INITIAL value."
 
 (defun tab-sets-annotate (cand)
   "Annotate tab-set CAND with list of file-names."
-  (when-let ((sets tab-sets--alist)
-             (index (seq-position
-                     sets nil
-                     (lambda (set _) (equal (car set) cand)))))
+  (when-let* ((sets tab-sets--alist)
+              (index (seq-position
+                      sets nil
+                      (lambda (set _) (equal (car set) cand)))))
     (let* ((set (nth index sets))
+           (num (- 30 (length (car set))))
+           (spaces (if (wholenump num)
+                       (make-string num ? )
+                     ""))
            (files (cadr set)))
-      (mapconcat (lambda (x)
-                   (let ((name (file-name-nondirectory x)))
-                     (concat
-                      " | "
-                      (if (< 20 (length name))
-                          (substring name 0 20)
-                        name))))
-                 files))))
+      (concat spaces "| "
+              (mapconcat (lambda (x)
+                           (let ((name (file-name-nondirectory x)))
+                             (concat
+                              (if (< 20 (length name))
+                                  (substring name 0 20)
+                                (string-pad name 20))
+                              " | ")))
+                         files)))))
 
 ;;; User-facing functions
 
@@ -242,9 +247,9 @@ With prefix arg, open in current frame."
   "Rename tab-set NAME."
   (interactive
    (list (tab-sets--select "Rename tab-set: ")))
-  (let* ((new-name
-          (tab-sets--check-name (read-string
-                                 (format "Rename \"%s\" to: " name)))))
+  (let ((new-name
+         (tab-sets--check-name (read-string
+                                (format "Rename \"%s\" to: " name)))))
     (setf (car (assoc name tab-sets--alist)) new-name)
     (when tab-sets-bookmark-store
       (bookmark-prop-set name 'tab-set-name new-name)
@@ -313,38 +318,6 @@ Adds tab-set as an Embark target, and adds `tab-sets-map'
 to `embark-keymap-alist'."
   (with-eval-after-load 'embark
     (add-to-list 'embark-keymap-alist '(tab-set . tab-sets-map))))
-
-;;; Marginalia Integration
-
-(defvar marginalia-annotator-registry)
-
-(defun tab-sets-marginalia-annotation (cand)
-  "Annotate tab-set CAND."
-  (when-let ((sets tab-sets--alist)
-             (index (seq-position
-                     sets nil
-                     (lambda (set _) (equal (car set) cand)))))
-    (let* ((set (nth index sets))
-           (files (cadr set))
-           (annot (mapconcat (lambda (x)
-                               (let ((name (file-name-nondirectory x)))
-                                 (concat
-                                  " | "
-                                  (if (< 20 (length name))
-                                      (substring name 0 20)
-                                    name))))
-                             files)))
-      (marginalia--fields
-       (annot :format (propertize "%s" 'face 'marginalia-file-name))))))
-
-;;;###autoload
-(defun tab-sets-setup-marginalia ()
-  "Setup Marginalia annotation for `tab-sets’ completion.
-Alternative to the built-in annotation function."
-  (with-eval-after-load 'marginalia
-    (add-to-list 'marginalia-annotator-registry
-                 '(tab-set tab-sets-marginalia-annotation
-                           marginalia-annotate-file builtin none))))
 
 (provide 'tab-sets)
 
