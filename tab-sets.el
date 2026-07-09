@@ -247,11 +247,15 @@ With prefix arg, open in current frame."
    (list (tab-sets--select "Rename tab-set: ")))
   (let ((new-name
          (tab-sets--check-name (read-string
-                                (format "Rename \"%s\" to: " name)))))
+                                (format "Rename \"%s\" to: " name))))
+        (bookmark-name (concat tab-sets-bookmark-prefix name)))
     (setf (car (assoc name tab-sets--alist)) new-name)
     (when tab-sets-bookmark-store
-      (bookmark-prop-set name 'tab-set-name new-name)
-      (bookmark-rename name new-name))
+      (bookmark-prop-set bookmark-name 'tab-set-name new-name)
+      (bookmark-rename bookmark-name
+                       (concat tab-sets-bookmark-prefix new-name)))
+    (when (equal name (frame-parameter (selected-frame) 'tab-set-frame))
+      (set-frame-parameter (selected-frame) 'tab-set-frame new-name))
     (message "Tab-set ‘%s’ renamed ‘%s’." name new-name)))
 
 ;;; Bookmark Integration
