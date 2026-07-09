@@ -197,6 +197,7 @@ With optional PROMPT and INITIAL value."
                                    :name name)))
     (push (list name (tab-sets--frame-files) frame-set) tab-sets--alist)
     (tab-sets-save-to-file)
+    (set-frame-parameter (selected-frame) 'tab-set-frame name)
     (when tab-sets-bookmark-store
       (tab-sets-bookmark-store name))
     (message "Tab-set ‘%s’ saved to file." name)))
