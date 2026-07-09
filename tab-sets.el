@@ -297,8 +297,9 @@ Delete stale tab-set bookmarks."
 (defun tab-sets-reconcile-bookmarks ()
   "Reconcile tab-sets and bookmarks."
   (interactive)
-  (tab-sets-ensure-bookmarks)
-  (tab-sets-prune-stale-bookmarks))
+  (tab-sets-prune-stale-bookmarks)
+  (tab-sets-ensure-bookmarks))
+
 
 ;;; Embark Integration
 
