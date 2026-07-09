@@ -118,10 +118,10 @@ This allows for opening tab-sets with `bookmark-jump’."
 
 (defun tab-sets--frame-files ()
   "Return list of files from current frame."
-  (let ((tab-nums (length (funcall tab-bar-tabs-function)))
+  (let ((tabs  (funcall tab-bar-tabs-function))
         (current (tab-bar--current-tab-index))
         files)
-    (dotimes (num tab-nums)
+    (dotimes (num (length tabs))
       (tab-select (1+ num))
       (push (tab-sets--tab-files) files))
     (tab-select (1+ current))
