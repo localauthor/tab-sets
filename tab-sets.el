@@ -111,13 +111,10 @@ This allows for opening tab-sets with `bookmark-jump’."
 
 (defun tab-sets--tab-files ()
   "Return list of files from windows in current tab."
-  (let ((bufs-in-tab))
-    (walk-windows (lambda (win)
-                    (push
-                     (buffer-file-name
-                      (window-buffer win))
-                     bufs-in-tab)))
-    (remq nil bufs-in-tab)))
+  (delq nil
+        (mapcar (lambda (win)
+                  (buffer-file-name (window-buffer win)))
+                (window-list))))
 
 (defun tab-sets--frame-files ()
   "Return list of files from current frame."
